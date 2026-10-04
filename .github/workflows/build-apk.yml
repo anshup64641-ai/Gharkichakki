@@ -1,0 +1,67 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      # Customer App APK Build karein
+      - name: Build Customer APK
+        run: |
+          # Check karein path 'customer' hai ya 'ghar_ki_chakki_android/customer'
+          if [ -d "customer" ]; then
+            cd customer
+          elif [ -d "ghar_ki_chakki_android/customer" ]; then
+            cd ghar_ki_chakki_android/customer
+          fi
+          
+          # Agar gradlew nahi hai to generate karein
+          gradle wrapper
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+
+      # Admin App APK Build karein (Agar chahiye to)
+      - name: Build Admin APK
+        run: |
+          if [ -d "admin" ]; then
+            cd admin
+          elif [ -d "ghar_ki_chakki_android/admin" ]; then
+            cd ghar_ki_chakki_android/admin
+          fi
+
+          gradle wrapper
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+
+      # Customer APK upload karein
+      - name: Upload Customer APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Customer-App-Debug
+          path: "**/customer/app/build/outputs/apk/debug/*.apk"
+
+      # Admin APK upload karein
+      - name: Upload Admin APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Admin-App-Debug
+          path: "**/admin/app/build/outputs/apk/debug/*.apk"
